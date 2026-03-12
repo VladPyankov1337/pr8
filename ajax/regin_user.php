@@ -21,13 +21,17 @@
 	if($user_read = $query_user->fetch_row()) {
 		echo $id;
 	} else {
-		$mysqli->query("INSERT INTO `users`(`login`, `password`, `roll`) VALUES ('".$login."', '".$password."', 0)");
+		$token = md5(uniqid(rand(), true));
+		$mysqli->query("INSERT INTO `users`(`login`, `password`, `roll`, `token`) VALUES ('".$login."', '".$password."', 0, '".$token."')");
 		
 		$query_user = $mysqli->query("SELECT * FROM `users` WHERE `login`='".$login."' AND `password`= '".$password."';");
 		$user_new = $query_user->fetch_row();
 		$id = $user_new[0];
 			
-		if($id != -1) $_SESSION['user'] = $id;
+		if($id != -1) {
+			$_SESSION['user'] = $id;
+			$_SESSION['token'] = $token;
+		}
 		echo $id;
 	}
 ?>

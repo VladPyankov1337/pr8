@@ -2,7 +2,7 @@
 	session_start();
 	include("./settings/connect_datebase.php");
 	
-	if (isset($_SESSION['user'])) {
+    if (isset($_SESSION['user'])) {
 		if($_SESSION['user'] != -1) {
 			
 			$user_query = $mysqli->query("SELECT * FROM `users` WHERE `id` = ".$_SESSION['user']);
@@ -11,7 +11,14 @@
 				else if($user_read[3] == 1) header("Location: admin.php");
 			}
 		}
- 	}
+ 	} else if (!isset($_SESSION['mail'])){
+        header("Location: login.php");
+    } else {
+        $code = rand(100000, 999999);
+        $_SESSION['code'] = $code;
+        mail($_SESSION['mail'], 'Код для подтверждения авторизации', "Код для подтверждения: ".$code);
+        // unset($_SESSION['mail']);
+    }
 ?>
 <html>
 	<head> 
@@ -35,16 +42,12 @@
 		<div class="main">
 			<div class="content">
 				<div class = "login">
-					<div class="name">Авторизация</div>
+					<div class="name">Подтверждение авторизации</div>
 				
-					<div class = "sub-name">Логин:</div>
-					<input name="_login" type="text" placeholder="" onkeypress="return PressToEnter(event)"/>
-					<div class = "sub-name">Пароль:</div>
-					<input name="_password" type="password" placeholder="" onkeypress="return PressToEnter(event)"/>
-					
-					<a href="regin.php">Регистрация</a>
-					<br><a href="recovery.php">Забыли пароль?</a>
-					<input type="button" class="button" value="Войти" onclick="LogIn()"/>
+					<div class = "sub-name">Код отправленный на почту:</div>
+					<input name="_code" type="text" placeholder="" onkeypress="return PressToEnter(event)"/>
+
+					<input type="button" class="button" style="margin-top: 10px;" value="Войти" onclick="LogIn()"/>
 					<img src = "img/loading.gif" class="loading"/>
 				</div>
 				
@@ -61,40 +64,24 @@
 				var loading = document.getElementsByClassName("loading")[0];
 				var button = document.getElementsByClassName("button")[0];
 				
-				var _login = document.getElementsByName("_login")[0].value;
-				var _password = document.getElementsByName("_password")[0].value;
+				var _code = document.getElementsByName("_code")[0].value;
 				loading.style.display = "block";
 				button.className = "button_diactive";
 				
 				var data = new FormData();
-				data.append("login", _login);
-				data.append("password", _password);
+				data.append("code", _code);
 				
 				// AJAX запрос
 				$.ajax({
-					url         : 'ajax/login_user.php',
+					url         : 'ajax/check_code.php',
 					type        : 'POST', // важно!
 					data        : data,
 					cache       : false,
 					dataType    : 'html',
-					// отключаем обработку передаваемых данных, пусть передаются как есть
 					processData : false,
-					// отключаем установку заголовка типа запроса. Так jQuery скажет серверу что это строковой запрос
 					contentType : false, 
-					// функция успешного ответа сервера
 					success: function (_data) {
-						_data = _data.trim();
-						console.log("Авторизация прошла успешно, id: " + _data);
-						if(_data == "") {
-							loading.style.display = "none";
-							button.className = "button";
-							alert("Логин или пароль не верный.");
-						} else {
-							localStorage.setItem("token", _data);
-							window.location.href = "mail.php";
-							loading.style.display = "none";
-							button.className = "button";
-						}
+						location.reload();
 					},
 					// функция ошибки
 					error: function( ){
@@ -107,13 +94,10 @@
 			
 			function PressToEnter(e) {
 				if (e.keyCode == 13) {
-					var _login = document.getElementsByName("_login")[0].value;
-					var _password = document.getElementsByName("_password")[0].value;
+					var _code = document.getElementsByName("_code")[0].value;
 					
-					if(_password != "") {
-						if(_login != "") {
-							LogIn();
-						}
+					if(_code != "") {
+						LogIn();
 					}
 				}
 			}
